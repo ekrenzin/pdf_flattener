@@ -3,6 +3,8 @@ name: Build PDF Flattener
 on:
   push:
     branches: [main]
+    tags:
+      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -36,14 +38,39 @@ jobs:
 
       - name: Upload Windows artifact
         if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pdf_flattener-windows
           path: dist/pdf_flattener.exe
 
       - name: Upload macOS artifact
         if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: pdf_flattener-macos
           path: dist/pdf_flattener
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            artifacts/pdf_flattener-windows/pdf_flattener.exe
+            artifacts/pdf_flattener-macos/pdf_flattener
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
