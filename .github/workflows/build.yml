@@ -1,10 +1,8 @@
-name: Build PDF Flattener
+name: Build Executable
 
 on:
   push:
     branches: [main]
-    tags:
-      - "v*" # Push events to matching v*, i.e. v1.0, v20.15.10
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -14,70 +12,27 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [windows-latest, macos-latest]
-        python-version: ["3.9"]
+        os: [windows-latest, ubuntu-latest, macos-latest]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v2
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v2
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.10"
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip --no-cache-dir
-          pip install --no-cache-dir pyinstaller==6.11.0
-          pip install --no-cache-dir PyPDF2
-          # tkinter is included with Python, no need to pip install it
+          python -m pip install --upgrade pip
+          pip install pyinstaller PyPDF2
 
       - name: Build with PyInstaller
-        run: |
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            pyinstaller --onefile --windowed --clean --name pdf_flattener --debug all flatten_pdf.py
-          else
-            pyinstaller --onefile --windowed --clean --name pdf_flattener flatten_pdf.py
-          fi
-        shell: bash
-        env:
-          PYTHONUNBUFFERED: 1
+        run: pyinstaller --onefile --windowed flatten_pdf.py
 
-      - name: Upload Windows artifact
-        if: matrix.os == 'windows-latest'
-        uses: actions/upload-artifact@v4
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
         with:
-          name: pdf_flattener-windows
-          path: dist/pdf_flattener.exe
-
-      - name: Upload macOS artifact
-        if: matrix.os == 'macos-latest'
-        uses: actions/upload-artifact@v4
-        with:
-          name: pdf_flattener-macos
-          path: dist/pdf_flattener
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Download all artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            artifacts/pdf_flattener-windows/pdf_flattener.exe
-            artifacts/pdf_flattener-macos/pdf_flattener
-          draft: false
-          prerelease: false
-          generate_release_notes: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: PDF-Flattener-${{ matrix.os }}
+          path: |
+            dist/*

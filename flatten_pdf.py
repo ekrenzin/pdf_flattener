@@ -9,32 +9,17 @@ class PDFFlattenerGUI:
         self.root = tk.Tk()
         self.root.title("PDF Flattener")
         
-        # Set minimum window size
-        self.root.minsize(400, 200)
+        # Simple window setup
+        self.root.geometry("400x200")
         
-        # Center window on screen
-        window_width = 400
-        window_height = 200
-        screen_width = self.root.winfo_screenwidth()
-        screen_height = self.root.winfo_screenheight()
-        center_x = int(screen_width/2 - window_width/2)
-        center_y = int(screen_height/2 - window_height/2)
-        self.root.geometry(f'{window_width}x{window_height}+{center_x}+{center_y}')
-
-        # Create main frame
-        main_frame = ttk.Frame(self.root, padding="20")
-        main_frame.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-
-        # Selected file label
-        self.file_label = ttk.Label(main_frame, text="No file selected", wraplength=350)
-        self.file_label.grid(row=0, column=0, columnspan=2, pady=(0, 20))
-
-        # Buttons
-        ttk.Button(main_frame, text="Select PDF", command=self.select_file).grid(
-            row=1, column=0, padx=5)
-        ttk.Button(main_frame, text="Flatten PDF", command=self.flatten_pdf).grid(
-            row=1, column=1, padx=5)
-
+        # Basic label
+        self.file_label = tk.Label(self.root, text="No file selected")
+        self.file_label.pack(pady=20)
+        
+        # Basic buttons
+        tk.Button(self.root, text="Select PDF", command=self.select_file).pack(pady=10)
+        tk.Button(self.root, text="Flatten PDF", command=self.flatten_pdf).pack(pady=10)
+        
         self.input_path = None
 
     def select_file(self):
@@ -75,8 +60,15 @@ class PDFFlattenerGUI:
             messagebox.showerror("Error", f"An error occurred: {str(e)}")
 
 def main():
-    app = PDFFlattenerGUI()
-    app.root.mainloop()
+    try:
+        app = PDFFlattenerGUI()
+        app.root.mainloop()
+    except Exception as e:
+        # In case of error, show a message box and print to console
+        print(f"Error occurred: {str(e)}")
+        messagebox.showerror("Error", f"Application error: {str(e)}")
+        # Keep the error message visible
+        input("Press Enter to exit...")
 
 if __name__ == "__main__":
     main() 
