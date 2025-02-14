@@ -1,46 +1,49 @@
-name: Build Executable
+name: Build PDF Flattener
 
 on:
   push:
-    branches: [ main ]
-    tags:
-      - 'v*'
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest]
+        python-version: ["3.9"]
 
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.x'
-        cache: 'pip'
-    
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install pyinstaller
-    
-    - name: Build executable
-      run: pyinstaller --onefile --windowed flatten_pdf.py
-    
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: flatten_pdf-Windows
-        path: dist/flatten_pdf.exe
+      - uses: actions/checkout@v3
 
-    - name: Create Release
-      if: startsWith(github.ref, 'refs/tags/')
-      uses: softprops/action-gh-release@v1
-      with:
-        files: dist/flatten_pdf.exe
-        draft: false
-        prerelease: false
-        generate_release_notes: true
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install PyPDF2
+          pip install tkinter
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --onefile --windowed --name pdf_flattener flatten_pdf.py
+
+      - name: Upload Windows artifact
+        if: matrix.os == 'windows-latest'
+        uses: actions/upload-artifact@v3
+        with:
+          name: pdf_flattener-windows
+          path: dist/pdf_flattener.exe
+
+      - name: Upload macOS artifact
+        if: matrix.os == 'macos-latest'
+        uses: actions/upload-artifact@v3
+        with:
+          name: pdf_flattener-macos
+          path: dist/pdf_flattener
