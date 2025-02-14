@@ -27,14 +27,19 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install pyinstaller
-          pip install PyPDF2
-          pip install tkinter
+          python -m pip install --upgrade pip --no-cache-dir
+          pip install --no-cache-dir pyinstaller==6.11.0
+          pip install --no-cache-dir PyPDF2
+          # tkinter is included with Python, no need to pip install it
 
       - name: Build with PyInstaller
         run: |
-          pyinstaller --onefile --windowed --name pdf_flattener flatten_pdf.py
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            pyinstaller --onefile --windowed --clean --name pdf_flattener flatten_pdf.py
+          else
+            pyinstaller --onefile --windowed --clean --name pdf_flattener flatten_pdf.py
+          fi
+        shell: bash
 
       - name: Upload Windows artifact
         if: matrix.os == 'windows-latest'
