@@ -2,8 +2,6 @@ services:
   - type: web
     name: pdf-flattener
     env: python
-    buildCommand: |
-      apt-get update && apt-get install -y libmupdf-dev && \
-      pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app:app
-    plan: free 
+    plan: free

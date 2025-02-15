@@ -1,8 +1,7 @@
 import os
 from flask import Flask, request, send_file, render_template_string
-import tempfile
 from werkzeug.utils import secure_filename
-import fitz
+from PyPDF2 import PdfReader, PdfWriter
 from PIL import Image
 import io
 
@@ -59,27 +58,24 @@ HTML_TEMPLATE = '''
 
 def flatten_pdf(input_stream):
     try:
+        # Read the input PDF
+        pdf_reader = PdfReader(input_stream)
+        pdf_writer = PdfWriter()
+
+        # Process each page
+        for page in pdf_reader.pages:
+            # Add the page to the output
+            pdf_writer.add_page(page)
+            
+            # Flatten form fields if they exist
+            if '/Annots' in page:
+                for annotation in page['/Annots']:
+                    page['/Annots'].remove(annotation)
+
+        # Save to memory stream
         output_stream = io.BytesIO()
-        doc = fitz.open(stream=input_stream.read())
-        output_doc = fitz.open()
-
-        for page_num in range(len(doc)):
-            page = doc[page_num]
-            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))
-            img_data = pix.tobytes("png")
-            img = Image.open(io.BytesIO(img_data))
-            bw_img = img.convert('L').point(lambda x: 0 if x < 128 else 255, '1')
-            
-            img_bytes = io.BytesIO()
-            bw_img.save(img_bytes, format='PNG')
-            img_bytes.seek(0)
-            
-            new_page = output_doc.new_page(width=page.rect.width, height=page.rect.height)
-            new_page.insert_image(new_page.rect, stream=img_bytes.getvalue())
-
-        output_doc.save(output_stream)
-        output_doc.close()
-        doc.close()
+        pdf_writer.write(output_stream)
+        output_stream.seek(0)
         
         return output_stream.getvalue()
     except Exception as e:

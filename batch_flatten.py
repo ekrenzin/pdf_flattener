@@ -6,8 +6,11 @@ try:
     from PIL import Image
     import io
 except ImportError:
-    print("❌ Missing required packages. Please install them using:")
-    print("python3 -m pip install PyMuPDF Pillow")
+    print("❌ Missing required packages. Please install them using one of these methods:")
+    print("\nMethod 1: Install from requirements.txt:")
+    print("pip install -r requirements.txt")
+    print("\nMethod 2: Install packages directly:")
+    print("pip install PyMuPDF Pillow")
     sys.exit(1)
 
 def flatten_pdf(input_path, output_path):
