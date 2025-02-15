@@ -1,18 +1,51 @@
-import PyPDF2
 import os
+import sys
+
+try:
+    import fitz  # PyMuPDF
+    from PIL import Image
+    import io
+except ImportError:
+    print("❌ Missing required packages. Please install them using:")
+    print("python3 -m pip install PyMuPDF Pillow")
+    sys.exit(1)
 
 def flatten_pdf(input_path, output_path):
     try:
-        with open(input_path, 'rb') as file:
-            reader = PyPDF2.PdfReader(file)
-            writer = PyPDF2.PdfWriter()
+        # Open PDF with PyMuPDF
+        doc = fitz.open(input_path)
+        output_doc = fitz.open()
 
-            for page in reader.pages:
-                writer.add_page(page)
+        for page_num in range(len(doc)):
+            page = doc[page_num]
+            
+            # Convert page to image with higher DPI for better quality
+            pix = page.get_pixmap(matrix=fitz.Matrix(2, 2))  # 2x resolution for better quality
+            img_data = pix.tobytes("png")
+            
+            # Convert to PIL Image
+            img = Image.open(io.BytesIO(img_data))
+            
+            # Convert to black and white (1-bit) with better threshold
+            bw_img = img.convert('L').point(lambda x: 0 if x < 128 else 255, '1')
+            
+            # Convert back to bytes
+            img_bytes = io.BytesIO()
+            bw_img.save(img_bytes, format='PNG')
+            img_bytes.seek(0)
+            
+            # Create new page with same dimensions
+            new_page = output_doc.new_page(width=page.rect.width, height=page.rect.height)
+            
+            # Insert B&W image
+            new_page.insert_image(new_page.rect, stream=img_bytes.getvalue())
 
-            with open(output_path, 'wb') as output_file:
-                writer.write(output_file)
-        print(f"✅ Successfully flattened: {os.path.basename(input_path)}")
+        # Save the output PDF
+        output_doc.save(output_path)
+        output_doc.close()
+        doc.close()
+        
+        print(f"✅ Successfully flattened and converted to B&W: {os.path.basename(input_path)}")
         return True
     except Exception as e:
         print(f"❌ Error processing {os.path.basename(input_path)}: {str(e)}")
